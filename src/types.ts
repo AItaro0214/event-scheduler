@@ -38,6 +38,7 @@ export interface Column {
 export interface Row {
   id: string;
   label: string; // first-column text (date)
+  date?: string; // ISO yyyy-mm-dd when the label was set from the calendar (optional; older files omit it)
   cells: Record<string, Cell>; // keyed by column id
 }
 

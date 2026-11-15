@@ -62,7 +62,8 @@ export function parseSavedFile(data: unknown): SavedFile | null {
     const rows: Row[] = (Array.isArray(p.rows) ? p.rows : []).filter(isObj).map((r) => {
       const cells: Record<string, Cell> = {};
       if (isObj(r.cells)) for (const [k, v] of Object.entries(r.cells)) cells[k] = parseCell(v);
-      return { id: str(r.id), label: str(r.label), cells };
+      const date = str(r.date);
+      return { id: str(r.id), label: str(r.label), ...(/^\d{4}-\d{2}-\d{2}$/.test(date) ? { date } : {}), cells };
     });
     const notes: Note[] = (Array.isArray(p.notes) ? p.notes : []).filter(isObj).map((n) => ({
       id: str(n.id),

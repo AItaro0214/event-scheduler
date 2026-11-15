@@ -1,4 +1,4 @@
-import { emptyCell, formatDateLabel, makeNote, makePage, makeRow, newSheet, uid } from "./model";
+import { addDays, emptyCell, formatDateLabel, fromISO, makeNote, makePage, makeRow, newSheet, uid } from "./model";
 import { commit, getSheet, replaceSheet } from "./store";
 import type { Assignment, Cell, Note, Page, Row, Sheet } from "./types";
 import { MIN_COL_W, TABLE_W } from "./types";
@@ -87,23 +87,52 @@ export const deleteRow = (pageId: string, rowId: string) =>
     if (p && p.rows.length > 1) p.rows = p.rows.filter((r) => r.id !== rowId);
   });
 
+/** Free-text label; a hand-typed label no longer carries a calendar date. */
 export const setRowLabel = (pageId: string, rowId: string, label: string) =>
   commit((s) => {
     const r = findPage(s, pageId)?.rows.find((x) => x.id === rowId);
-    if (r) r.label = label;
+    if (r) {
+      r.label = label;
+      delete r.date;
+    }
   }, `label:${rowId}`);
 
-export const fillDates = (pageId: string, startISO: string) =>
+/** Set one row's date from the calendar (label follows formatDateLabel). */
+export const setRowDate = (pageId: string, rowId: string, iso: string) =>
   commit((s) => {
-    const p = findPage(s, pageId);
-    if (!p) return;
-    const [y, m, d] = startISO.split("-").map(Number);
-    if (!y || !m || !d) return;
-    p.rows.forEach((row, i) => {
-      const dt = new Date(y, m - 1, d + i);
-      row.label = formatDateLabel(dt);
-    });
+    const r = findPage(s, pageId)?.rows.find((x) => x.id === rowId);
+    const d = fromISO(iso);
+    if (!r || !d) return;
+    r.date = iso;
+    r.label = formatDateLabel(d);
   });
+
+/**
+ * Fill consecutive dates starting at `rowId` on `pageId`, continuing through
+ * the rows of every following page in order. One undo step.
+ */
+export const fillDatesFrom = (pageId: string, rowId: string, startISO: string) =>
+  commit((s) => {
+    const pi = s.pages.findIndex((p) => p.id === pageId);
+    if (pi < 0 || !fromISO(startISO)) return;
+    const ri = s.pages[pi].rows.findIndex((r) => r.id === rowId);
+    if (ri < 0) return;
+    let n = 0;
+    for (let p = pi; p < s.pages.length; p++) {
+      for (let r = p === pi ? ri : 0; r < s.pages[p].rows.length; r++) {
+        const iso = addDays(startISO, n++);
+        const row = s.pages[p].rows[r];
+        row.date = iso;
+        row.label = formatDateLabel(fromISO(iso)!);
+      }
+    }
+  });
+
+/** Column-header action: fill from the first row of the page downward (crossing pages). */
+export const fillDates = (pageId: string, startISO: string) => {
+  const first = getSheet().pages.find((p) => p.id === pageId)?.rows[0];
+  if (first) fillDatesFrom(pageId, first.id, startISO);
+};
 
 // ---------------- Columns ----------------
 export const renameColumn = (colId: string, name: string) =>

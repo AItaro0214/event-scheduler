@@ -77,6 +77,17 @@ export const COPY = {
   dragHint: "ドラッグで移動",
   rowMenu: "行の操作",
   columnMenu: "列の操作",
+
+  // ---- Calendar / date column ----
+  pickDate: "日付を選ぶ",
+  fillDown: "この日から下の行へ順に入れる",
+  fillDownHint: "次のページの行にも続けて入れます",
+  customLabel: "自由に入力",
+  customLabelPlaceholder: "例）予備日",
+  today: "今日",
+  monthTitle: "{y}年{m}月",
+  prevMonth: "前の月",
+  nextMonth: "次の月",
 } as const;
 
 export type CopyKey = keyof typeof COPY;

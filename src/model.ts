@@ -124,10 +124,79 @@ export function formatDateLabel(d: Date): string {
   return `${d.getMonth() + 1}月${d.getDate()}日(${WEEKDAYS[d.getDay()]})`;
 }
 
+const pad2 = (n: number) => String(n).padStart(2, "0");
+
+/** Local calendar date → "yyyy-mm-dd". */
+export function toISO(d: Date): string {
+  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+}
+
+/** "yyyy-mm-dd" → local Date (midnight), or null when malformed. */
+export function fromISO(iso: string | undefined | null): Date | null {
+  if (!iso) return null;
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso);
+  if (!m) return null;
+  const d = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
+export function addDays(iso: string, n: number): string {
+  const d = fromISO(iso) ?? new Date();
+  d.setDate(d.getDate() + n);
+  return toISO(d);
+}
+
 export function todayISO(): string {
-  const d = new Date();
-  const p = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+  return toISO(new Date());
+}
+
+/**
+ * Read a date back out of a label such as "11月18日(水)" or "11/18". The year is
+ * not in the label: use `refYear`, nudged by a year when the result would be
+ * more than six months away from `ref` (sheets are made for the near future).
+ */
+export function parseDateLabel(label: string, ref: Date = new Date()): string | null {
+  const m = /(\d{1,2})\s*[月\/.-]\s*(\d{1,2})/.exec(label);
+  if (!m) return null;
+  const month = Number(m[1]);
+  const day = Number(m[2]);
+  if (month < 1 || month > 12 || day < 1 || day > 31) return null;
+  let year = ref.getFullYear();
+  let d = new Date(year, month - 1, day);
+  const half = 183 * 86400000;
+  if (d.getTime() - ref.getTime() > half) year -= 1;
+  else if (ref.getTime() - d.getTime() > half) year += 1;
+  d = new Date(year, month - 1, day);
+  if (d.getMonth() !== month - 1) return null; // e.g. 2月30日
+  return toISO(d);
+}
+
+/** Date stored on a row, falling back to what its label says. */
+export function rowDate(row: { label: string; date?: string }): string | null {
+  return fromISO(row.date) ? row.date! : parseDateLabel(row.label);
+}
+
+/**
+ * Where the calendar should open for a row: its own date, else the previous
+ * row's date + 1 (looking back through earlier pages), else today.
+ */
+export function suggestedRowDate(pages: { rows: { label: string; date?: string }[] }[], pageIndex: number, rowIndex: number): string {
+  const own = rowDate(pages[pageIndex].rows[rowIndex]);
+  if (own) return own;
+  let p = pageIndex;
+  let r = rowIndex - 1;
+  let steps = 1; // rows between the dated row and this one
+  while (p >= 0) {
+    while (r >= 0) {
+      const d = rowDate(pages[p].rows[r]);
+      if (d) return addDays(d, steps);
+      r -= 1;
+      steps += 1;
+    }
+    p -= 1;
+    if (p >= 0) r = pages[p].rows.length - 1;
+  }
+  return todayISO();
 }
 
 export function baseFilename(title: string): string {

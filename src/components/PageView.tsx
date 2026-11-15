@@ -6,7 +6,6 @@ import {
   setCellText,
   setHeaderNote,
   setPageTitle,
-  setRowLabel,
   type AssignmentRef,
   type CellRef,
 } from "../actions";
@@ -33,6 +32,7 @@ export interface PageViewProps {
   onColumnTap?: (colIndex: number, anchor: Anchor) => void;
   onRowMenu?: (rowId: string, anchor: Anchor) => void;
   onAddColumn?: (anchor: Anchor) => void;
+  onDateTap?: (rowId: string, anchor: Anchor) => void;
 }
 
 export function PageView(props: PageViewProps) {
@@ -189,14 +189,14 @@ function RowView(props: PageViewProps & { row: Row }) {
             {exportMode ? (
               <div class="text-static">{row.label}</div>
             ) : (
-              <input
-                type="text"
-                value={row.label}
-                aria-label={col.name}
-                onInput={(e) =>
-                  setRowLabel(page.id, row.id, (e.currentTarget as HTMLInputElement).value)
-                }
-              />
+              <button
+                type="button"
+                class={`label-btn${row.label ? "" : " blank"}`}
+                aria-label={`${col.name}: ${COPY.pickDate}`}
+                onClick={(e) => props.onDateTap?.(row.id, anchorFromEl(e.currentTarget))}
+              >
+                {row.label || <span class="label-ph" aria-hidden>{COPY.pickDate}</span>}
+              </button>
             )}
           </div>
         ) : (

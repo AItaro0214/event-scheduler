@@ -7,12 +7,15 @@ import {
   deletePage,
   deleteRow,
   fillDates,
+  fillDatesFrom,
   moveAssignment,
   moveColumn,
   placeAssignment,
   removeAssignment,
   renameColumn,
   resetSheet,
+  setRowDate,
+  setRowLabel,
   updateAssignment,
   type AssignmentRef,
   type CellRef,
@@ -20,10 +23,11 @@ import {
 import { COPY, fmt } from "../copy";
 import { useDragKind, type DragPayload, type DropTarget, type Point } from "../dnd";
 import { downloadBlob, jsonBlob, parseSavedFile, readFileAsText } from "../io";
-import { baseFilename, saveDataFilename, isSheetEmpty, todayISO } from "../model";
+import { baseFilename, saveDataFilename, isSheetEmpty, rowDate, suggestedRowDate, todayISO } from "../model";
 import { canRedo, canUndo, redo, replaceSheet, undo, useSheet } from "../store";
 import { PAGE_W, type Sheet } from "../types";
 import { AssignPopover, type AssignIntent } from "./AssignPopover";
+import { Calendar } from "./Calendar";
 import { IconArrowL, IconArrowR, IconCalendar, IconFile, IconFit, IconTrash, IconZoomIn, IconZoomOut } from "./icons";
 import { PageView } from "./PageView";
 import { Dialog, Popover, type Anchor } from "./Popover";
@@ -92,6 +96,7 @@ export function App() {
   const [selectedNote, setSelectedNote] = useState<string | null>(null);
   const [justPlaced, setJustPlaced] = useState<string | null>(null);
   const [dateDraft, setDateDraft] = useState(todayISO());
+  const [dateMenu, setDateMenu] = useState<{ rowId: string; anchor: Anchor; iso: string } | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const drag = useDragKind();
 
@@ -207,6 +212,7 @@ export function App() {
 
   const scaledH = useMemo(() => Math.ceil(pageH * scale), [pageH, scale]);
   const col = colMenu ? sheet.columns[colMenu.index] : null;
+  const dateRow = dateMenu ? page.rows.find((r) => r.id === dateMenu.rowId) : null;
 
   return (
     <div class="app">
@@ -255,6 +261,10 @@ export function App() {
                 onDrop={handleDrop}
                 onColumnTap={(index, anchor) => setColMenu({ index, anchor })}
                 onRowMenu={(rowId, anchor) => setRowMenu({ rowId, anchor })}
+                onDateTap={(rowId, anchor) => {
+                  const ri = page.rows.findIndex((r) => r.id === rowId);
+                  setDateMenu({ rowId, anchor, iso: suggestedRowDate(sheet.pages, pageIndex, Math.max(0, ri)) });
+                }}
                 onAddColumn={(anchor) => {
                   addColumn("");
                   setColMenu({ index: sheet.columns.length, anchor });
@@ -322,7 +332,7 @@ export function App() {
           {colMenu.index === 0 ? (
             <>
               <div class="pop-label">{COPY.dateStart}</div>
-              <input class="field" type="date" value={dateDraft} onInput={(e) => setDateDraft((e.currentTarget as HTMLInputElement).value)} />
+              <Calendar value={dateDraft} onPick={setDateDraft} />
               <div class="pop-actions">
                 <button
                   type="button"
@@ -337,6 +347,7 @@ export function App() {
                   {COPY.fillDates}
                 </button>
               </div>
+              <p class="pop-hint">{COPY.fillDownHint}</p>
             </>
           ) : (
             <>
@@ -383,6 +394,41 @@ export function App() {
               </div>
             </>
           )}
+        </Popover>
+      )}
+
+      {dateMenu && dateRow && (
+        <Popover anchor={dateMenu.anchor} onClose={() => setDateMenu(null)} width={320}>
+          <h2 class="pop-title">{COPY.pickDate}</h2>
+          <Calendar
+            value={rowDate(dateRow) ?? dateMenu.iso}
+            onPick={(iso) => {
+              setRowDate(page.id, dateMenu.rowId, iso);
+              setDateMenu(null);
+            }}
+          />
+          <div class="pop-actions">
+            <button
+              type="button"
+              class="btn btn-lg btn-outline grow"
+              onClick={() => {
+                fillDatesFrom(page.id, dateMenu.rowId, rowDate(dateRow) ?? dateMenu.iso);
+                setDateMenu(null);
+              }}
+            >
+              <IconCalendar />
+              {COPY.fillDown}
+            </button>
+          </div>
+          <p class="pop-hint">{COPY.fillDownHint}</p>
+          <div class="pop-label">{COPY.customLabel}</div>
+          <input
+            class="field"
+            value={dateRow.label}
+            placeholder={COPY.customLabelPlaceholder}
+            onInput={(e) => setRowLabel(page.id, dateMenu.rowId, (e.currentTarget as HTMLInputElement).value)}
+            onKeyDown={(e) => e.key === "Enter" && setDateMenu(null)}
+          />
         </Popover>
       )}
 
