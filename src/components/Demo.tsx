@@ -460,7 +460,7 @@ function MiniApp({ f }: { f: Frame }) {
             >
               <span class="grip">⋮⋮</span>
               <span class="mini-name">{n}</span>
-              <span class="mini-count">{fmt(COPY.placedCount, { n: 0 })}</span>
+              <span class="mini-count">{fmt(COPY.placedCount, { n: f.chips.some((c) => c.name === n) ? 1 : 0 })}</span>
             </div>
           ) : null,
         )}
@@ -477,7 +477,7 @@ function FileCard({ kind, p }: { kind: "pdf" | "json"; p: number[] }) {
       style={{ left: `${x}px`, top: `${y}px`, transform: `translate(-50%, -50%) rotate(${rot}deg) scale(${0.4 + 0.6 * k})`, opacity: Math.min(1, k * 3) }}
     >
       <IconFile />
-      <span>{kind === "pdf" ? "PDF" : COPY.saveDataName}</span>
+      <span class="mini-file-label">{kind === "pdf" ? "PDF" : COPY.saveDataName}</span>
     </div>
   );
 }

@@ -2424,3 +2424,13 @@ textarea.field {
   clip: rect(0 0 0 0);
   white-space: nowrap;
 }
+
+/* Keep "イベントセーブデータ" on one line inside the mini file card. */
+.mini-file .mini-file-label {
+  white-space: nowrap;
+  font-size: 0.82em;
+  letter-spacing: -0.02em;
+}
+.mini-file.json {
+  width: 58px;
+}
