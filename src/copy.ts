@@ -95,7 +95,7 @@ export const COPY = {
   welcomeBody: "はじめに、画面の使い方を1分ほどで説明します。あとからでも、上の「使い方」ボタンでいつでも見られます。",
   welcomeStart: "解説を見る",
   welcomeSkip: "あとで",
-  welcomePrivacy: "データはこのブラウザにしか保存されません。どこにも送信されません。",
+  welcomePrivacy: "データはこのブラウザにしか保存されません。\nどこにも送信されません。",
   welcomeSource: "ソースコード",
   sourceUrl: "https://github.com/AItaro0214/event-scheduler",
   tourNext: "次へ",
