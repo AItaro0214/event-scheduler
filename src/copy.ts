@@ -1,5 +1,4 @@
-// All Japanese UI strings live here. Strings prefixed "TODO:" are placeholders
-// the client will write; they are listed in the delivery report.
+// All Japanese UI strings live here.
 export const COPY = {
   appName: "イベントシフトメーカー",
   newSheet: "新規作成",
@@ -59,24 +58,24 @@ export const COPY = {
 
   // ---- Added strings (placeholders; client to write the Japanese) ----
   // Side panel tab for columns is covered by `columns`. The following are new.
-  ok: "TODO: OK",
-  zoomFit: "TODO: Fit to width",
-  zoomIn: "TODO: Zoom in",
-  zoomOut: "TODO: Zoom out",
-  moveLeft: "TODO: Move left",
-  moveRight: "TODO: Move right",
-  rename: "TODO: Rename",
-  menu: "TODO: Menu",
-  close: "TODO: Close",
-  prevPage: "TODO: Previous page",
-  nextPage: "TODO: Next page",
-  slotEmpty: "TODO: No time slots yet. Add one in the 時間帯 tab.",
-  exporting: "TODO: Preparing PDF…",
-  dateStart: "TODO: Start date",
-  noteColor: "TODO: Sticky colour",
-  dragHint: "TODO: Drag to move",
-  rowMenu: "TODO: Row options",
-  columnMenu: "TODO: Column options",
+  ok: "OK",
+  zoomFit: "幅に合わせる",
+  zoomIn: "拡大",
+  zoomOut: "縮小",
+  moveLeft: "左へ移動",
+  moveRight: "右へ移動",
+  rename: "名前を変更",
+  menu: "メニュー",
+  close: "閉じる",
+  prevPage: "前のページ",
+  nextPage: "次のページ",
+  slotEmpty: "時間帯がまだありません。「時間帯」タブで追加してください。",
+  exporting: "PDFを作成中…",
+  dateStart: "開始日",
+  noteColor: "付箋の色",
+  dragHint: "ドラッグで移動",
+  rowMenu: "行の操作",
+  columnMenu: "列の操作",
 } as const;
 
 export type CopyKey = keyof typeof COPY;
