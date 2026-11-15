@@ -3,6 +3,7 @@ import {
   IconChevronL,
   IconChevronR,
   IconDownload,
+  IconHelp,
   IconLogo,
   IconNew,
   IconNote,
@@ -29,6 +30,7 @@ interface Props {
   onAddNote: () => void;
   onSaveJson: () => void;
   onSavePdf: () => void;
+  onGuide: () => void;
 }
 
 export function TopBar(p: Props) {
@@ -45,11 +47,16 @@ export function TopBar(p: Props) {
           <IconNew />
           {COPY.newSheet}
         </button>
-        <button type="button" class="btn btn-ghost" onClick={p.onLoad}>
+        <button type="button" class="btn btn-ghost" onClick={p.onLoad} data-tour="load-json">
           <IconUpload />
           {COPY.loadJson}
         </button>
       </div>
+      <span class="topbar-sep" />
+      <button type="button" class="btn btn-ghost" onClick={p.onGuide} data-tour="guide" title={COPY.guideButton}>
+        <IconHelp />
+        {COPY.guideButton}
+      </button>
       <span class="topbar-sep" />
       <div class="topbar-group">
         <button type="button" class="btn btn-icon btn-ghost" onClick={p.onUndo} disabled={!p.canUndo} title={COPY.undo} aria-label={COPY.undo}>
@@ -76,7 +83,7 @@ export function TopBar(p: Props) {
         >
           <IconChevronR />
         </button>
-        <button type="button" class="btn btn-icon" onClick={p.onAddPage} title={COPY.addPage} aria-label={COPY.addPage}>
+        <button type="button" class="btn btn-icon" onClick={p.onAddPage} title={COPY.addPage} aria-label={COPY.addPage} data-tour="add-page">
           <IconPlus />
         </button>
         <button
@@ -92,14 +99,14 @@ export function TopBar(p: Props) {
       </div>
       <span class="topbar-spacer" />
       <div class="topbar-group">
-        <button type="button" class="btn btn-outline" onClick={p.onAddNote}>
+        <button type="button" class="btn btn-outline" onClick={p.onAddNote} data-tour="add-note">
           <IconNote />
           {COPY.addNote}
         </button>
-        <button type="button" class="btn btn-ghost" onClick={p.onSaveJson}>
+        <button type="button" class="btn btn-ghost" onClick={p.onSaveJson} data-tour="save-json">
           {COPY.saveJson}
         </button>
-        <button type="button" class="btn btn-primary" onClick={p.onSavePdf} title={COPY.savePdfHint}>
+        <button type="button" class="btn btn-primary" onClick={p.onSavePdf} title={COPY.savePdfHint} data-tour="save-pdf">
           <IconDownload />
           {COPY.savePdf}
         </button>

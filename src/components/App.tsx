@@ -28,7 +28,8 @@ import { canRedo, canUndo, redo, replaceSheet, undo, useSheet } from "../store";
 import { PAGE_W, type Sheet } from "../types";
 import { AssignPopover, type AssignIntent } from "./AssignPopover";
 import { Calendar } from "./Calendar";
-import { IconArrowL, IconArrowR, IconCalendar, IconFile, IconFit, IconTrash, IconZoomIn, IconZoomOut } from "./icons";
+import { Tour } from "./Tour";
+import { IconArrowL, IconArrowR, IconCalendar, IconFile, IconFit, IconGithub, IconShield, IconTrash, IconZoomIn, IconZoomOut } from "./icons";
 import { PageView } from "./PageView";
 import { Dialog, Popover, type Anchor } from "./Popover";
 import { SidePanel } from "./SidePanel";
@@ -42,6 +43,21 @@ type DialogState =
   | { type: "saved"; files: { name: string; url: string }[] };
 
 const ZOOM_STEPS = [0.5, 0.6, 0.7, 0.8, 0.9, 1, 1.15, 1.3, 1.5];
+const TOUR_FLAG = "event-shift-maker:tour";
+const tourSeen = () => {
+  try {
+    return localStorage.getItem(TOUR_FLAG) === "seen";
+  } catch {
+    return true;
+  }
+};
+const markTourSeen = () => {
+  try {
+    localStorage.setItem(TOUR_FLAG, "seen");
+  } catch {
+    /* private mode */
+  }
+};
 
 export function App() {
   const sheet = useSheet();
@@ -97,6 +113,18 @@ export function App() {
   const [justPlaced, setJustPlaced] = useState<string | null>(null);
   const [dateDraft, setDateDraft] = useState(todayISO());
   const [dateMenu, setDateMenu] = useState<{ rowId: string; anchor: Anchor; iso: string } | null>(null);
+  const [welcome, setWelcome] = useState(() => !tourSeen());
+  const [tourStep, setTourStep] = useState<number | null>(null);
+  const startTour = () => {
+    markTourSeen();
+    setWelcome(false);
+    setAssign(null);
+    setColMenu(null);
+    setRowMenu(null);
+    setDateMenu(null);
+    setDialog(null);
+    setTourStep(0);
+  };
   const fileRef = useRef<HTMLInputElement>(null);
   const drag = useDragKind();
 
@@ -236,6 +264,7 @@ export function App() {
         onAddNote={() => setSelectedNote(addNote(page.id))}
         onSaveJson={saveJson}
         onSavePdf={savePdf}
+        onGuide={startTour}
       />
       <input ref={fileRef} type="file" accept="application/json,.json" hidden onChange={onFileChosen} />
 
@@ -553,6 +582,48 @@ export function App() {
             ))}
           </div>
         </Dialog>
+      )}
+
+      {welcome && (
+        <Dialog
+          title={COPY.welcomeTitle}
+          message={COPY.welcomeBody}
+          onClose={() => {
+            markTourSeen();
+            setWelcome(false);
+          }}
+          actions={
+            <>
+              <button
+                type="button"
+                class="btn btn-ghost"
+                onClick={() => {
+                  markTourSeen();
+                  setWelcome(false);
+                }}
+              >
+                {COPY.welcomeSkip}
+              </button>
+              <button type="button" class="btn btn-primary" onClick={startTour}>
+                {COPY.welcomeStart}
+              </button>
+            </>
+          }
+        >
+          <p class="welcome-note">
+            <IconShield />
+            <span>{COPY.welcomePrivacy}</span>
+          </p>
+          <a class="welcome-source" href={COPY.sourceUrl} target="_blank" rel="noopener noreferrer">
+            <IconGithub />
+            <b>{COPY.welcomeSource}</b>
+            <span>{COPY.sourceUrl}</span>
+          </a>
+        </Dialog>
+      )}
+
+      {tourStep !== null && (
+        <Tour sheet={sheet} step={tourStep} onStep={setTourStep} onClose={() => setTourStep(null)} />
       )}
 
       {busy && (

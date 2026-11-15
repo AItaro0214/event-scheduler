@@ -79,6 +79,7 @@ export function PageView(props: PageViewProps) {
                 key={c.id}
                 col={c}
                 index={i}
+                tour={i === 1}
                 scale={props.scale ?? 1}
                 exportMode={!!exportMode}
                 onTap={props.onColumnTap}
@@ -97,8 +98,8 @@ export function PageView(props: PageViewProps) {
             )}
           </div>
 
-          {page.rows.map((row) => (
-            <RowView key={row.id} row={row} {...props} />
+          {page.rows.map((row, i) => (
+            <RowView key={row.id} row={row} first={i === 0} {...props} />
           ))}
         </div>
 
@@ -132,12 +133,14 @@ function HeaderCell({
   index,
   scale,
   exportMode,
+  tour,
   onTap,
 }: {
   col: Column;
   index: number;
   scale: number;
   exportMode: boolean;
+  tour?: boolean;
   onTap?: (i: number, a: Anchor) => void;
 }) {
   const startResize = (e: PointerEvent) => {
@@ -162,7 +165,7 @@ function HeaderCell({
     e.preventDefault();
   };
   return (
-    <div class="tcell hcell">
+    <div class="tcell hcell" data-tour={tour && !exportMode ? "col-header" : undefined}>
       <span>{col.name}</span>
       {!exportMode && (
         <>
@@ -179,8 +182,8 @@ function HeaderCell({
   );
 }
 
-function RowView(props: PageViewProps & { row: Row }) {
-  const { sheet, page, row, exportMode } = props;
+function RowView(props: PageViewProps & { row: Row; first?: boolean }) {
+  const { sheet, page, row, exportMode, first } = props;
   return (
     <div class="trow body">
       {sheet.columns.map((col, i) =>
@@ -193,6 +196,7 @@ function RowView(props: PageViewProps & { row: Row }) {
                 type="button"
                 class={`label-btn${row.label ? "" : " blank"}`}
                 aria-label={`${col.name}: ${COPY.pickDate}`}
+                data-tour={first ? "date-cell" : undefined}
                 onClick={(e) => props.onDateTap?.(row.id, anchorFromEl(e.currentTarget))}
               >
                 {row.label || <span class="label-ph" aria-hidden>{COPY.pickDate}</span>}
@@ -203,6 +207,7 @@ function RowView(props: PageViewProps & { row: Row }) {
           <div class="tcell" key={col.id}>
             <CellView
               {...props}
+              tour={first && i === 1}
               cell={row.cells[col.id] ?? { text: "", assignments: [] }}
               cellRef={{ pageId: page.id, rowId: row.id, colId: col.id }}
             />
@@ -225,7 +230,7 @@ function RowView(props: PageViewProps & { row: Row }) {
   );
 }
 
-function CellView(props: PageViewProps & { cell: Cell; cellRef: CellRef }) {
+function CellView(props: PageViewProps & { cell: Cell; cellRef: CellRef; tour?: boolean }) {
   const { sheet, cell, cellRef, exportMode } = props;
   const peopleById = new Map(sheet.people.map((p) => [p.id, p]));
   const marksById = new Map(sheet.marks.map((m) => [m.id, m]));
@@ -243,6 +248,7 @@ function CellView(props: PageViewProps & { cell: Cell; cellRef: CellRef }) {
     <div
       class="cell"
       {...dropAttrs}
+      data-tour={props.tour && !exportMode ? "cell" : undefined}
       onClick={
         exportMode
           ? undefined

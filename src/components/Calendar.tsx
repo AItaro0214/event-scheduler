@@ -58,7 +58,7 @@ export function Calendar({ value, onPick }: Props) {
           </div>
         ))}
         {cells.map((d, i) => {
-          if (!d) return <div key={`e${i}`} class="cal-day empty" />;
+          if (!d) return <div key={`e${i}`} class="cal-day cal-blank" />;
           const iso = toISO(d);
           const dow = d.getDay();
           const cls = [

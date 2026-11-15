@@ -47,6 +47,7 @@ export function SidePanel({ sheet, onDrop }: Props) {
             role="tab"
             aria-selected={tab === id}
             class={`tab${tab === id ? " on" : ""}`}
+            data-tour={`tab-${id}`}
             onClick={() => setTab(id)}
           >
             {label}
@@ -116,7 +117,7 @@ function PeopleTab({ sheet, onDrop }: Props) {
 
   return (
     <>
-      <div class="add-form">
+      <div class="add-form" data-tour="members-form">
         <textarea
           class="field"
           rows={2}
