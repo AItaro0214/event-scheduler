@@ -29,6 +29,7 @@ import { PAGE_W, type Sheet } from "../types";
 import { AssignPopover, type AssignIntent } from "./AssignPopover";
 import { Calendar } from "./Calendar";
 import { Tour } from "./Tour";
+import { Demo } from "./Demo";
 import { IconArrowL, IconArrowR, IconCalendar, IconFile, IconFit, IconGithub, IconShield, IconTrash, IconZoomIn, IconZoomOut } from "./icons";
 import { PageView } from "./PageView";
 import { Dialog, Popover, type Anchor } from "./Popover";
@@ -113,7 +114,7 @@ export function App() {
   const [justPlaced, setJustPlaced] = useState<string | null>(null);
   const [dateDraft, setDateDraft] = useState(todayISO());
   const [dateMenu, setDateMenu] = useState<{ rowId: string; anchor: Anchor; iso: string } | null>(null);
-  const [welcome, setWelcome] = useState(() => !tourSeen());
+  const [welcome, setWelcome] = useState<false | "first" | "replay">(() => (tourSeen() ? false : "first"));
   const [tourStep, setTourStep] = useState<number | null>(null);
   const startTour = () => {
     markTourSeen();
@@ -264,7 +265,14 @@ export function App() {
         onAddNote={() => setSelectedNote(addNote(page.id))}
         onSaveJson={saveJson}
         onSavePdf={savePdf}
-        onGuide={startTour}
+        onGuide={() => {
+          setAssign(null);
+          setColMenu(null);
+          setRowMenu(null);
+          setDateMenu(null);
+          setDialog(null);
+          setWelcome("replay");
+        }}
       />
       <input ref={fileRef} type="file" accept="application/json,.json" hidden onChange={onFileChosen} />
 
@@ -586,6 +594,8 @@ export function App() {
 
       {welcome && (
         <Dialog
+          wide
+          lead={<Demo />}
           title={COPY.welcomeTitle}
           message={COPY.welcomeBody}
           onClose={() => {
@@ -602,7 +612,7 @@ export function App() {
                   setWelcome(false);
                 }}
               >
-                {COPY.welcomeSkip}
+                {welcome === "replay" ? COPY.close : COPY.welcomeSkip}
               </button>
               <button type="button" class="btn btn-primary" onClick={startTour}>
                 {COPY.welcomeStart}

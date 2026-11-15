@@ -97,13 +97,17 @@ interface DialogProps {
   children?: ComponentChildren;
   actions: ComponentChildren;
   onClose: () => void;
+  wide?: boolean;
+  /** Rendered above the title (e.g. the demo animation). */
+  lead?: ComponentChildren;
 }
 
-export function Dialog({ title, message, children, actions, onClose }: DialogProps) {
+export function Dialog({ title, message, children, actions, onClose, wide, lead }: DialogProps) {
   return (
     <>
       <div class="scrim dim" onPointerDown={onClose} />
-      <div class="dialog" role="alertdialog" aria-modal="true">
+      <div class={`dialog${wide ? " wide" : ""}`} role="alertdialog" aria-modal="true">
+        {lead}
         {title && <h2 class="dialog-title">{title}</h2>}
         {message && <p class="dialog-msg">{message}</p>}
         {children}
