@@ -2,7 +2,7 @@
 
 ## Goal
 Browser-only web app for building a temporary event/campaign shift sheet on an iPad by drag & drop.
-Reference sheet (what users make today by hand): `docs/reference-sheet.png` — read it first.
+A hand-made reference sheet was shown to the implementer privately; it is not part of this repo.
 Only design requirement from the client: **it must feel like a pro app designer built it — comfortable to use, refined and beautiful.** All visual/interaction design decisions are yours.
 
 ## Hard constraints
