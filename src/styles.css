@@ -542,6 +542,7 @@ body.is-dragging * {
 /* Body rows */
 .trow.body {
   min-height: 86px;
+  position: relative;
 }
 .label-cell {
   display: flex;
@@ -568,6 +569,7 @@ body.is-dragging * {
   flex-direction: column;
   padding: 6px 8px 5px;
   min-height: 100%;
+  cursor: text;
   transition: background var(--dur) var(--ease);
 }
 .page:not(.export) .cell.drop-over {
@@ -642,7 +644,7 @@ body.is-dragging * {
   align-items: flex-end;
   height: 15px;
   margin-bottom: -3px;
-  margin-right: -6px;
+  margin-right: -8px;
   position: relative;
   z-index: 1;
 }
@@ -681,7 +683,7 @@ body.is-dragging * {
 }
 
 .cell-text {
-  flex: 1;
+  flex: none;
   width: 100%;
   min-height: 22px;
   border: 0;
@@ -803,6 +805,11 @@ body.is-dragging * {
 .page.export .note {
   box-shadow: none;
   border: 1px solid var(--note-edge);
+  height: auto !important; /* never clip text in the PDF */
+  min-height: 60px;
+}
+.page.export .note-text {
+  overflow: visible;
 }
 .note[data-color="yellow"] {
   --note-bg: #fff4a8;
@@ -829,8 +836,12 @@ body.is-dragging * {
     0 0 0 2px #2d5be3,
     0 8px 22px rgba(20, 22, 30, 0.18);
 }
+.page:not(.export) .note {
+  touch-action: none;
+  cursor: grab;
+}
 .note-bar {
-  height: 18px;
+  height: 24px;
   flex: none;
   background: var(--note-bar);
   border-radius: 3px 3px 0 0;
@@ -842,10 +853,10 @@ body.is-dragging * {
   content: "";
   position: absolute;
   left: 50%;
-  top: 7px;
-  width: 26px;
+  top: 10px;
+  width: 28px;
   height: 4px;
-  margin-left: -13px;
+  margin-left: -14px;
   border-radius: 2px;
   background: rgba(28, 30, 36, 0.14);
 }
@@ -854,11 +865,14 @@ body.is-dragging * {
 }
 .note-text {
   flex: 1;
-  width: 100%;
+  width: auto;
+  margin: 0 6px 6px;
   border: 0;
   background: transparent;
   resize: none;
-  padding: 7px 9px 9px;
+  padding: 4px 4px 4px;
+  touch-action: none;
+  cursor: text;
   font-size: 15px;
   line-height: 1.4;
   color: #1c1e24;
@@ -1121,6 +1135,13 @@ textarea.field {
 .item-name:focus {
   background: #fff;
   box-shadow: 0 0 0 2px var(--accent-ring);
+}
+.item-name-static {
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  white-space: nowrap;
+  cursor: grab;
 }
 .item-count {
   font-size: 12px;
@@ -1388,6 +1409,10 @@ textarea.field {
 }
 .mark-toggle .badge.tag {
   font-size: 13px;
+}
+.mark-toggle-tag {
+  color: var(--c);
+  font-weight: 700;
 }
 .mark-toggle .check {
   width: 16px;

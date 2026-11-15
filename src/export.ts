@@ -2,7 +2,6 @@ import html2canvas from "html2canvas";
 import { jsPDF } from "jspdf";
 import { h, render } from "preact";
 import { PageView } from "./components/PageView";
-import { serializeSheet } from "./io";
 import type { Sheet } from "./types";
 
 const A4 = { w: 297, h: 210 }; // mm, landscape
@@ -54,6 +53,3 @@ export async function renderPdf(sheet: Sheet, onProgress?: (i: number, n: number
   return pdf.output("blob");
 }
 
-export function jsonBlob(sheet: Sheet): Blob {
-  return new Blob([JSON.stringify(serializeSheet(sheet), null, 2)], { type: "application/json" });
-}

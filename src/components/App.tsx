@@ -19,8 +19,7 @@ import {
 } from "../actions";
 import { COPY, fmt } from "../copy";
 import { useDragKind, type DragPayload, type DropTarget, type Point } from "../dnd";
-import { jsonBlob, renderPdf } from "../export";
-import { downloadBlob, parseSavedFile, readFileAsText } from "../io";
+import { downloadBlob, jsonBlob, parseSavedFile, readFileAsText } from "../io";
 import { baseFilename, isSheetEmpty, todayISO } from "../model";
 import { canRedo, canUndo, redo, replaceSheet, undo, useSheet } from "../store";
 import { PAGE_W, type Sheet } from "../types";
@@ -129,7 +128,12 @@ export function App() {
     });
     if (payload.kind === "person") {
       if (target.type === "cell" || target.type === "slotline") {
-        setAssign({ mode: "new", personId: payload.personId, cell: cellOf(target), anchor: { x: p.x, y: p.y } });
+        const r = target.el.getBoundingClientRect();
+        const anchor = {
+          x: Math.max(r.left, Math.min(r.right, p.x)),
+          y: Math.max(r.top, Math.min(r.bottom, p.y)),
+        };
+        setAssign({ mode: "new", personId: payload.personId, cell: cellOf(target), anchor });
       }
       return;
     }
@@ -159,6 +163,7 @@ export function App() {
     setBusy(COPY.exporting);
     try {
       const base = baseFilename(page.title || sheet.pages[0].title);
+      const { renderPdf } = await import("../export"); // keeps html2canvas/jsPDF out of the first load
       const pdf = await renderPdf(sheet);
       const json = jsonBlob(sheet);
       downloadBlob(pdf, `${base}.pdf`);
@@ -237,7 +242,7 @@ export function App() {
           }}
         >
           <div class="stage-inner">
-            <div class="page-scaler" ref={pageWrapRef} style={{ width: Math.ceil(PAGE_W * scale), height: scaledH }}>
+            <div class="page-scaler" ref={pageWrapRef} style={{ width: `${Math.ceil(PAGE_W * scale)}px`, height: `${scaledH}px` }}>
               <PageView
                 sheet={sheet}
                 page={page}
@@ -337,7 +342,7 @@ export function App() {
             <>
               <div class="menu-sep" />
               <div class="menu-list">
-                <div style={{ display: "flex", gap: 8 }}>
+                <div style={{ display: "flex", gap: "8px" }}>
                   <button
                     type="button"
                     class="btn btn-lg btn-outline grow"
@@ -486,7 +491,6 @@ export function App() {
       {dialog?.type === "saved" && (
         <Dialog
           title={COPY.saved}
-          message={COPY.savePdfHint}
           onClose={closeDialog}
           actions={
             <button type="button" class="btn btn-primary" onClick={closeDialog}>

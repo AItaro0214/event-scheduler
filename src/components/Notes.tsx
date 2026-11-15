@@ -60,17 +60,28 @@ function NoteView({
 }) {
   const pageH = () => pageEl.current?.offsetHeight ?? 794;
 
-  const drag = (e: PointerEvent, mode: "move" | "resize") => {
+  /**
+   * Move/resize with a small threshold so a tap still focuses the text. On
+   * touch, a drag may start anywhere on the note (touch hit-testing tends to
+   * snap to the textarea); with a mouse the textarea keeps text selection.
+   */
+  const drag = (e: PointerEvent, mode: "move" | "resize", deferred: boolean) => {
     if (!e.isPrimary || (e.pointerType === "mouse" && e.button !== 0)) return;
     const el = e.currentTarget as HTMLElement;
     const sx = e.clientX;
     const sy = e.clientY;
     const start = { ...note };
+    let moving = !deferred;
     el.setPointerCapture(e.pointerId);
     onSelect?.(note.id);
     const onMove = (ev: PointerEvent) => {
       const dx = (ev.clientX - sx) / scale;
       const dy = (ev.clientY - sy) / scale;
+      if (!moving) {
+        if (Math.hypot(dx, dy) * scale < 8) return;
+        moving = true;
+        (document.activeElement as HTMLElement | null)?.blur?.();
+      }
       if (mode === "move") {
         const x = Math.max(0, Math.min(PAGE_W - start.w, start.x + dx));
         const y = Math.max(0, Math.min(pageH() - start.h, start.y + dy));
@@ -89,7 +100,7 @@ function NoteView({
     el.addEventListener("pointermove", onMove);
     el.addEventListener("pointerup", onUp);
     el.addEventListener("pointercancel", onUp);
-    e.preventDefault();
+    if (!deferred) e.preventDefault();
     e.stopPropagation();
   };
 
@@ -97,13 +108,25 @@ function NoteView({
     <div
       class={`note${selected ? " selected" : ""}`}
       data-color={note.color}
-      style={{ left: note.x, top: note.y, width: note.w, height: note.h }}
+      style={{
+        left: `${note.x}px`,
+        top: `${note.y}px`,
+        width: `${note.w}px`,
+        height: `${note.h}px`,
+        minHeight: exportMode ? `${note.h}px` : undefined,
+      }}
       onPointerDown={(e) => {
         e.stopPropagation();
-        if (!exportMode) onSelect?.(note.id);
+        if (exportMode) return;
+        onSelect?.(note.id);
+        const t = e.target as HTMLElement;
+        if (t.closest(".note-tools, .note-resize")) return;
+        const onText = !!t.closest(".note-text");
+        if (onText && e.pointerType === "mouse") return;
+        drag(e, "move", onText);
       }}
     >
-      <div class="note-bar" onPointerDown={exportMode ? undefined : (e) => drag(e, "move")} />
+      <div class="note-bar" />
       {exportMode ? (
         <div class="note-text">{note.text}</div>
       ) : (
@@ -118,7 +141,7 @@ function NoteView({
         />
       )}
       {!exportMode && (
-        <div class="note-resize ui" onPointerDown={(e) => drag(e, "resize")} aria-hidden />
+        <div class="note-resize ui" onPointerDown={(e) => drag(e, "resize", false)} aria-hidden />
       )}
       {!exportMode && selected && (
         <div class="note-tools ui" onPointerDown={(e) => e.stopPropagation()}>

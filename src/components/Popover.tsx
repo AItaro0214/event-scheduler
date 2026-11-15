@@ -74,8 +74,8 @@ export function Popover({ anchor, onClose, children, sheet, dim, width }: Popove
           asSheet
             ? undefined
             : {
-                left: pos?.left ?? -9999,
-                top: pos?.top ?? -9999,
+                left: `${pos?.left ?? -9999}px`,
+                top: `${pos?.top ?? -9999}px`,
                 width: width ? `${width}px` : undefined,
                 "--origin": pos?.origin ?? "top center",
                 visibility: pos ? "visible" : "hidden",

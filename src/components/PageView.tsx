@@ -42,7 +42,11 @@ export function PageView(props: PageViewProps) {
   const pageRef = useRef<HTMLDivElement>(null);
 
   return (
-    <div class={`page${exportMode ? " export" : ""}`} ref={pageRef} style={{ width: 1123 }}>
+    <div
+      class={`page${exportMode ? " export" : ""}`}
+      ref={pageRef}
+      style={{ width: "1123px", transform: exportMode || !props.scale ? undefined : `scale(${props.scale})` }}
+    >
       <div class="page-pad">
         <div class="page-headnote">
           <AutoText
@@ -54,7 +58,7 @@ export function PageView(props: PageViewProps) {
           />
         </div>
 
-        <div class="sheet-table" style={{ "--cols": cols, width: tableWidth }}>
+        <div class="sheet-table" style={{ "--cols": cols, width: `${tableWidth}px` }}>
           <div class="title-row">
             {exportMode ? (
               <div class="text-static">{page.title}</div>
@@ -102,7 +106,7 @@ export function PageView(props: PageViewProps) {
           <button
             type="button"
             class="add-row-btn ui"
-            style={{ width: tableWidth }}
+            style={{ width: `${tableWidth}px` }}
             onClick={() => addRow(page.id)}
           >
             <IconPlus />
@@ -236,7 +240,19 @@ function CellView(props: PageViewProps & { cell: Cell; cellRef: CellRef }) {
       };
 
   return (
-    <div class="cell" {...dropAttrs}>
+    <div
+      class="cell"
+      {...dropAttrs}
+      onClick={
+        exportMode
+          ? undefined
+          : (e) => {
+              // Tapping empty cell space focuses the free-text field.
+              if (e.target === e.currentTarget && !wasJustDragging())
+                e.currentTarget.querySelector<HTMLTextAreaElement>(".cell-text")?.focus();
+            }
+      }
+    >
       {sheet.slots.map((slot) => {
         const items = cell.assignments.filter((a) => a.slotId === slot.id);
         if (!items.length) return null;

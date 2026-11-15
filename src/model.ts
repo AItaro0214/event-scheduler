@@ -82,7 +82,7 @@ export function makeNote(page: Page): Note {
   const w = 150;
   const h = 110;
   const x = Math.min(PAGE_W - w - 12, PAGE_PAD.left + TABLE_W + 14 + (n % 3) * 8);
-  const y = PAGE_PAD.top + 56 + (n % 5) * 36;
+  const y = PAGE_PAD.top + 96 + (n % 5) * 36;
   return { id: uid("n"), text: "", x, y, w, h, color: NOTE_COLORS[n % NOTE_COLORS.length] };
 }
 

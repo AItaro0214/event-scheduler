@@ -85,6 +85,10 @@ export function parseSavedFile(data: unknown): SavedFile | null {
   };
 }
 
+export function jsonBlob(sheet: Sheet): Blob {
+  return new Blob([JSON.stringify(serializeSheet(sheet), null, 2)], { type: "application/json" });
+}
+
 export function downloadBlob(blob: Blob, filename: string): void {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");

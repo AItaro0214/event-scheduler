@@ -91,8 +91,14 @@ export function AssignPopover({ sheet, intent, onPlace, onUpdate, onRemove, onCl
                   aria-pressed={on}
                   onClick={() => toggleMark(m.id)}
                 >
-                  <MarkBadge mark={m} />
-                  <span>{m.label}</span>
+                  {[...m.label.trim()].length === 1 ? (
+                    <>
+                      <MarkBadge mark={m} />
+                      <span>{m.label}</span>
+                    </>
+                  ) : (
+                    <span class="mark-toggle-tag">{m.label}</span>
+                  )}
                   <IconCheck class="check" />
                 </button>
               );

@@ -214,7 +214,8 @@ export function armDrag(e: PointerEvent, opts: DragOptions): void {
   function onUp(ev: PointerEvent) {
     if (ev.pointerId !== pointerId) return;
     if (started) {
-      last = { x: ev.clientX, y: ev.clientY };
+      // Some touch stacks report (0,0) on the final up; fall back to the last move.
+      if (ev.clientX || ev.clientY) last = { x: ev.clientX, y: ev.clientY };
       const t = findTarget(last, opts.payload);
       cleanup();
       opts.onDrop(t, last);

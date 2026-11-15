@@ -15,7 +15,7 @@ import {
   reorderSlot,
 } from "../actions";
 import { COPY, fmt } from "../copy";
-import { armDrag, type DragPayload, type DropTarget, type Point } from "../dnd";
+import { armDrag, wasJustDragging, type DragPayload, type DropTarget, type Point } from "../dnd";
 import { MARK_PALETTE, placementCounts } from "../model";
 import type { Sheet } from "../types";
 import { MarkBadge } from "./Chip";
@@ -103,6 +103,7 @@ function useReorderDrag(list: "people" | "slots" | "marks", onReorder: (id: stri
 
 function PeopleTab({ sheet, onDrop }: Props) {
   const [draft, setDraft] = useState("");
+  const [editing, setEditing] = useState<string | null>(null);
   const counts = placementCounts(sheet);
   const reorder = useReorderDrag("people", reorderPerson);
 
@@ -151,7 +152,7 @@ function PeopleTab({ sheet, onDrop }: Props) {
                 data-id={p.id}
                 onPointerDown={(e) => {
                   const t = e.target as HTMLElement;
-                  if (t.closest("input,button,.grip")) return;
+                  if (editing === p.id || t.closest("input,button,.grip")) return;
                   const payload: DragPayload = { kind: "person", personId: p.id };
                   const pill = document.createElement("span");
                   pill.className = "person-pill";
@@ -171,13 +172,29 @@ function PeopleTab({ sheet, onDrop }: Props) {
                 >
                   <IconGrip />
                 </span>
-                <input
-                  class="item-name"
-                  value={p.name}
-                  aria-label={COPY.rename}
-                  onInput={(e) => renamePerson(p.id, (e.currentTarget as HTMLInputElement).value)}
-                  onFocus={(e) => (e.currentTarget as HTMLInputElement).select()}
-                />
+                {editing === p.id ? (
+                  <input
+                    class="item-name"
+                    value={p.name}
+                    aria-label={COPY.rename}
+                    autoFocus
+                    onInput={(e) => renamePerson(p.id, (e.currentTarget as HTMLInputElement).value)}
+                    onFocus={(e) => (e.currentTarget as HTMLInputElement).select()}
+                    onBlur={() => setEditing(null)}
+                    onKeyDown={(e) => (e.key === "Enter" || e.key === "Escape") && setEditing(null)}
+                  />
+                ) : (
+                  <span
+                    class="item-name item-name-static"
+                    role="button"
+                    tabIndex={0}
+                    aria-label={`${p.name}: ${COPY.rename}`}
+                    onClick={() => !wasJustDragging() && setEditing(p.id)}
+                    onKeyDown={(e) => e.key === "Enter" && setEditing(p.id)}
+                  >
+                    {p.name}
+                  </span>
+                )}
                 <span class={`item-count${n ? "" : " zero"}`}>{fmt(COPY.placedCount, { n })}</span>
                 <button
                   type="button"
@@ -263,7 +280,7 @@ function MarksTab({ sheet }: Props) {
           <button
             type="button"
             class="color-btn btn-outline"
-            style={{ borderRadius: 10, height: 44, width: 44 }}
+            style={{ borderRadius: "10px", height: "44px", width: "44px" }}
             aria-label={COPY.markColor}
             onClick={(e) => setPalette({ id: null, anchor: anchorFromEl(e.currentTarget) })}
           >
