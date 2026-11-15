@@ -41,7 +41,12 @@ interface Props {
   onClose: () => void;
 }
 
-export function Tour({ sheet, step, onStep, onClose }: Props) {
+export function Tour({ sheet, step, onStep, onClose: closeTour }: Props) {
+  // Leave the side panel on メンバー whichever tab the tour visited last.
+  const onClose = () => {
+    clickTab("tab-people")();
+    closeTour();
+  };
   const def = STEPS[step];
   const [rect, setRect] = useState<Rect | null>(null);
   const [ready, setReady] = useState(false);
