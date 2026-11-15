@@ -1908,19 +1908,33 @@ textarea.field {
 }
 .demo-finger {
   position: absolute;
-  width: 26px;
-  height: 26px;
-  margin: -13px 0 0 -13px;
+  width: 20px;
+  height: 20px;
+  margin: -10px 0 0 -10px; /* centred exactly on the hit point */
   border-radius: 50%;
-  background: rgba(28, 30, 36, 0.22);
-  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.85), 0 2px 8px rgba(28, 30, 36, 0.25);
+  background: rgba(28, 30, 36, 0.2);
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.95), 0 1px 6px rgba(28, 30, 36, 0.35);
   transition: transform 120ms var(--ease), background 120ms var(--ease);
   pointer-events: none;
   z-index: 3;
 }
+.demo-finger::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 4px;
+  height: 4px;
+  margin: -2px 0 0 -2px;
+  border-radius: 50%;
+  background: rgba(28, 30, 36, 0.85);
+}
 .demo-finger.down {
-  transform: scale(0.78);
-  background: rgba(45, 91, 227, 0.45);
+  transform: scale(0.85);
+  background: rgba(45, 91, 227, 0.5);
+}
+.demo-finger.down::after {
+  background: #fff;
 }
 .demo-ripple {
   position: absolute;

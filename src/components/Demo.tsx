@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "preact/hooks";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "preact/hooks";
 import { COPY, fmt } from "../copy";
 import type { MarkDef } from "../types";
 import { Chip } from "./Chip";
@@ -76,40 +76,65 @@ const CAMERA: KF<number[]>[] = [
   [END, [400, 90, 1.5]],
 ];
 
-const FINGER: KF<number[]>[] = [
-  [1500, [600, 320]],
-  [1950, ADD_BTN],
-  [2400, ADD_BTN],
-  [3000, [466, 172]],
-  [4700, [466, 172]],
-  [5300, PERSON(0)],
-  [5500, PERSON(0)],
-  [7000, CELL_C],
-  [7300, CELL_C],
-  [7700, [140, 250]],
-  [8600, SLOT_BTN],
-  [8900, SLOT_BTN],
-  [9350, MARK_RE],
-  [9550, MARK_RE],
-  [10000, MARK_KA],
-  [10250, MARK_KA],
-  [10750, PLACE_BTN],
-  [11000, PLACE_BTN],
-  [11550, PERSON(1)],
-  [11700, PERSON(1)],
-  [12500, CELL_C],
-  [12550, CELL_C],
-  [13000, [140, 250]],
-  [13650, SLOT_BTN],
-  [13850, SLOT_BTN],
-  [14200, PLACE_BTN],
-  [14400, PLACE_BTN],
-  [15000, [300, 260]],
-  [15800, PDF_BTN],
-  [16100, PDF_BTN],
-  [16700, [560, 300]],
-  [END, [560, 300]],
-];
+/** Centres (world px) of everything the finger presses. Defaults are estimates;
+ *  the component replaces them with measured positions once the DOM has laid out. */
+export interface Aim {
+  add: number[];
+  person: number[][];
+  cell: number[];
+  slot: number[];
+  re: number[];
+  ka: number[];
+  place: number[];
+  pdf: number[];
+}
+const DEFAULT_AIM: Aim = {
+  add: ADD_BTN,
+  person: [PERSON(0), PERSON(1), PERSON(2)],
+  cell: CELL_C,
+  slot: SLOT_BTN,
+  re: MARK_RE,
+  ka: MARK_KA,
+  place: PLACE_BTN,
+  pdf: PDF_BTN,
+};
+
+function buildFinger(a: Aim): KF<number[]>[] {
+  return [
+    [1500, [600, 320]],
+    [1950, a.add],
+    [2400, a.add],
+    [3000, [466, 172]],
+    [4700, [466, 172]],
+    [5300, a.person[0]],
+    [5500, a.person[0]],
+    [7000, a.cell],
+    [7300, a.cell],
+    [7700, [140, 250]],
+    [8600, a.slot],
+    [8900, a.slot],
+    [9350, a.re],
+    [9550, a.re],
+    [10000, a.ka],
+    [10250, a.ka],
+    [10750, a.place],
+    [11000, a.place],
+    [11550, a.person[1]],
+    [11700, a.person[1]],
+    [12500, a.cell],
+    [12550, a.cell],
+    [13000, [140, 250]],
+    [13650, a.slot],
+    [13850, a.slot],
+    [14200, a.place],
+    [14400, a.place],
+    [15000, [300, 260]],
+    [15800, a.pdf],
+    [16100, a.pdf],
+    [16700, [560, 300]],
+    [END, [560, 300]],
+  ];
+}
 const PRESSES: [number, number][] = [
   [1950, 2200], [5300, 7100], [8650, 8850], [9350, 9550], [10000, 10200], [10750, 10950],
   [11550, 12550], [13650, 13850], [14200, 14400], [15800, 16000],
@@ -122,12 +147,12 @@ const DRAGS: [number, number, number][] = [
 const RE: MarkDef = { id: "re", label: "レ", color: "#d7263d" };
 const KA: MarkDef = { id: "ka", label: "カ", color: "#1f3b8f" };
 
-function fingerPos(t: number): number[] {
+function fingerPos(t: number, aim: Aim, finger: KF<number[]>[]): number[] {
   // Drag segments follow a curve so the hand reads as a real reach.
   for (const [a, b, i] of DRAGS) {
-    if (t >= a && t <= b) return bez(PERSON(i), [330, 70], CELL_C, easeInOut(clamp01((t - a) / (b - a))));
+    if (t >= a && t <= b) return bez(aim.person[i], [330, 70], aim.cell, easeInOut(clamp01((t - a) / (b - a))));
   }
-  return track(t, FINGER, easeInOut);
+  return track(t, finger, easeInOut);
 }
 
 interface Frame {
@@ -141,14 +166,15 @@ interface Frame {
   popover: { k: number; name: string; slot: boolean; re: boolean; ka: boolean } | null;
   chips: { name: string; marks: MarkDef[]; pop: number }[];
   pdfPressed: boolean;
+  addPressed: boolean;
   files: { pdf: number[] | null; json: number[] | null }; // x, y, rot, k
   fade: number;
   scene: number;
 }
 
-function frameAt(t: number): Frame {
+function frameAt(t: number, aim: Aim, finger: KF<number[]>[]): Frame {
   const cam = track(t, CAMERA, easeInOut);
-  const [fx, fy] = fingerPos(t);
+  const [fx, fy] = fingerPos(t, aim, finger);
   const down = PRESSES.reduce((d, [a, b]) => Math.max(d, t >= a && t <= b ? 1 - prog(t, b - 90, b) * 0 : 0), 0);
   const fullText = `${NAMES[0]}\n${NAMES[1]}\n${NAMES[2]}`;
   const typedN = t < 2150 ? Math.floor(clamp01((t - 500) / 800) * fullText.length) : 0;
@@ -168,7 +194,7 @@ function frameAt(t: number): Frame {
   const fly = (a: number, to: number[], rot: number) => {
     if (t < a) return null;
     const k = prog(t, a, a + 900, easeInOut);
-    const p = bez(PDF_BTN, [to[0] + 60, -10], to, k);
+    const p = bez(aim.pdf, [to[0] + 60, -10], to, k);
     return [p[0], p[1], rot * k, k];
   };
   const files = { pdf: fly(15950, [318, 112], -7), json: fly(16250, [372, 120], 6) };
@@ -185,6 +211,7 @@ function frameAt(t: number): Frame {
     popover,
     chips,
     pdfPressed: t >= 15800 && t < 16050,
+    addPressed: t >= 1950 && t < 2200,
     files,
     fade,
     scene,
@@ -208,8 +235,24 @@ export function Demo() {
   const [playing, setPlaying] = useState(!reduced);
   const [width, setWidth] = useState(W);
   const hostRef = useRef<HTMLDivElement>(null);
+  const rootRef = useRef<HTMLDivElement>(null);
   const tRef = useRef(t);
   tRef.current = t;
+
+  // "demo-seek" {detail:{t}} pauses and jumps the clock (used by the smoke scripts).
+  useEffect(() => {
+    const el = rootRef.current;
+    if (!el) return;
+    const onSeek = (e: Event) => {
+      const ms = (e as CustomEvent<{ t: number }>).detail?.t;
+      if (typeof ms === "number") {
+        setPlaying(false);
+        setT(Math.max(0, Math.min(END - 1, ms)));
+      }
+    };
+    el.addEventListener("demo-seek", onSeek);
+    return () => el.removeEventListener("demo-seek", onSeek);
+  }, []);
 
   // Clock: rAF while playing and the tab is visible.
   useEffect(() => {
@@ -247,8 +290,67 @@ export function Demo() {
     return () => ro.disconnect();
   }, []);
 
-  const f = useMemo(() => frameAt(t), [t]);
+  // Aim at the real elements: measure their centres in world coordinates once
+  // they are laid out and settled, and again on resize / font load.
+  const [aim, setAim] = useState<Aim>(DEFAULT_AIM);
+  const [fontsReady, setFontsReady] = useState(false);
+  useEffect(() => {
+    let alive = true;
+    document.fonts?.ready.then(() => alive && setFontsReady(true));
+    return () => {
+      alive = false;
+    };
+  }, []);
+  const finger = useMemo(() => buildFinger(aim), [aim]);
+  const f = useMemo(() => frameAt(t, aim, finger), [t, aim, finger]);
   const fit = width / W;
+  const listSettled = f.listPop.every((p) => p >= 1);
+  const popSettled = !!f.popover && f.popover.k >= 1;
+  const stable = !f.addPressed && !f.pdfPressed;
+  const layoutSig = `${width}|${fontsReady}|${listSettled}|${popSettled}|${stable}`;
+  useLayoutEffect(() => {
+    if (!stable) return;
+    const world = rootRef.current?.querySelector<HTMLElement>(".demo-world");
+    if (!world) return;
+    const wr = world.getBoundingClientRect();
+    const k = wr.width / W;
+    if (!k) return;
+    const centre = (sel: string): number[] | null => {
+      const el = world.querySelector<HTMLElement>(`[data-demo="${sel}"]`);
+      if (!el) return null;
+      const r = el.getBoundingClientRect();
+      return [(r.left + r.width / 2 - wr.left) / k, (r.top + r.height / 2 - wr.top) / k];
+    };
+    setAim((prev) => {
+      const next: Aim = { ...prev, person: [...prev.person] };
+      let changed = false;
+      const put = (key: keyof Omit<Aim, "person">, sel: string) => {
+        const c = centre(sel);
+        if (c && (Math.abs(c[0] - prev[key][0]) > 0.05 || Math.abs(c[1] - prev[key][1]) > 0.05)) {
+          next[key] = c;
+          changed = true;
+        }
+      };
+      put("add", "add");
+      put("cell", "cell");
+      put("pdf", "pdf");
+      if (listSettled)
+        NAMES.forEach((_, i) => {
+          const c = centre(`person-${i}`);
+          if (c && (Math.abs(c[0] - prev.person[i][0]) > 0.05 || Math.abs(c[1] - prev.person[i][1]) > 0.05)) {
+            next.person[i] = c;
+            changed = true;
+          }
+        });
+      if (popSettled) {
+        put("slot", "slot-0");
+        put("re", "mark-re");
+        put("ka", "mark-ka");
+        put("place", "place");
+      }
+      return changed ? next : prev;
+    });
+  }, [layoutSig]);
   const [fx0, fy0, cs] = f.cam;
   // Keep the viewport inside the world so no empty edge ever shows.
   const tx = Math.max(W - W * cs, Math.min(0, W / 2 - fx0 * cs));
@@ -266,7 +368,7 @@ export function Demo() {
   const body = COPY[`demoScene${scene + 1}Body` as keyof typeof COPY];
 
   return (
-    <div class="demo" data-scene={scene + 1}>
+    <div class="demo" data-scene={scene + 1} ref={rootRef}>
       <div class="demo-host" ref={hostRef} style={{ height: `${H * fit}px` }}>
         <div class="demo-stage" style={{ transform: `scale(${fit})` }} aria-hidden>
           <div class="demo-world" style={{ transform: camStyle }}>
@@ -352,7 +454,7 @@ function MiniApp({ f }: { f: Frame }) {
           {COPY.addNote}
         </span>
         <span class="mini-btn">{COPY.saveJson}</span>
-        <span class={`mini-btn primary${f.pdfPressed ? " pressed" : ""}`}>
+        <span class={`mini-btn primary${f.pdfPressed ? " pressed" : ""}`} data-demo="pdf">
           <IconDownload />
           {COPY.savePdf}
         </span>
@@ -370,7 +472,7 @@ function MiniApp({ f }: { f: Frame }) {
             {[0, 1, 2, 3, 4].map((r) => (
               <div class="mini-row" key={r}>
                 <div class="mini-date">{r === 0 ? "11月3日(火)" : ""}</div>
-                <div class={`mini-cell${r === 0 && f.cellHot ? " hot" : ""}`}>
+                <div class={`mini-cell${r === 0 && f.cellHot ? " hot" : ""}`} data-demo={r === 0 ? "cell" : undefined}>
                   {r === 0 && f.chips.length > 0 && (
                     <div class="slot-line">
                       <span class="slot-label">早:</span>
@@ -404,17 +506,17 @@ function MiniApp({ f }: { f: Frame }) {
             <div class="mini-pop-label">{COPY.popoverSlot}</div>
             <div class="mini-choices">
               {["早", "10中", "中", "遅"].map((s, i) => (
-                <span key={s} class={`mini-choice${i === 0 && f.popover!.slot ? " on" : ""}`}>
+                <span key={s} class={`mini-choice${i === 0 && f.popover!.slot ? " on" : ""}`} data-demo={`slot-${i}`}>
                   {s}
                 </span>
               ))}
             </div>
             <div class="mini-pop-label">{COPY.popoverMarks}</div>
             <div class="mini-marks">
-              <span class={`mini-mark${f.popover.re ? " on" : ""}`} style={{ "--c": RE.color }}>
+              <span class={`mini-mark${f.popover.re ? " on" : ""}`} style={{ "--c": RE.color }} data-demo="mark-re">
                 <i class="badge circ" style={{ "--c": RE.color }}>レ</i>レ
               </span>
-              <span class={`mini-mark${f.popover.ka ? " on" : ""}`} style={{ "--c": KA.color }}>
+              <span class={`mini-mark${f.popover.ka ? " on" : ""}`} style={{ "--c": KA.color }} data-demo="mark-ka">
                 <i class="badge circ" style={{ "--c": KA.color }}>カ</i>カ
               </span>
               <span class="mini-mark" style={{ "--c": "#1f3b8f" }}>
@@ -426,7 +528,9 @@ function MiniApp({ f }: { f: Frame }) {
             </div>
             <div class="mini-pop-actions">
               <span class="mini-btn">{COPY.cancel}</span>
-              <span class="mini-btn primary">{COPY.place}</span>
+              <span class="mini-btn primary" data-demo="place">
+                {COPY.place}
+              </span>
             </div>
           </div>
         )}
@@ -448,7 +552,7 @@ function MiniApp({ f }: { f: Frame }) {
             </span>
           ))}
         </div>
-        <div class={`mini-btn primary block${f.finger.down > 0 && f.finger.x === ADD_BTN[0] && f.finger.y === ADD_BTN[1] ? " pressed" : ""}`}>
+        <div class={`mini-btn primary block${f.addPressed ? " pressed" : ""}`} data-demo="add">
           ＋ {COPY.addPerson}
         </div>
         {NAMES.map((n, i) =>
@@ -456,6 +560,7 @@ function MiniApp({ f }: { f: Frame }) {
             <div
               key={n}
               class="mini-item"
+              data-demo={`person-${i}`}
               style={{ top: `${LIST_Y(i) - 30}px`, transform: `scale(${f.listPop[i]})`, opacity: Math.min(1, f.listPop[i] * 1.4) }}
             >
               <span class="grip">⋮⋮</span>
