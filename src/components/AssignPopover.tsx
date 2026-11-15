@@ -20,8 +20,7 @@ interface Props {
 }
 
 /**
- * Slot + marks chooser. New placement: tapping a slot with no marks selected
- * places immediately (one tap). With marks toggled, pick a slot and confirm.
+ * Slot + marks chooser. Pick one slot and any number of marks, then confirm.
  * Editing: change slot/marks and confirm, or remove.
  */
 export function AssignPopover({ sheet, intent, onPlace, onUpdate, onRemove, onClose }: Props) {
@@ -45,13 +44,7 @@ export function AssignPopover({ sheet, intent, onPlace, onUpdate, onRemove, onCl
   const toggleMark = (id: string) =>
     setMarks((m) => (m.includes(id) ? m.filter((x) => x !== id) : [...m, id]));
 
-  const pickSlot = (id: string) => {
-    if (!editing && marks.length === 0) {
-      onPlace(id, []);
-      return;
-    }
-    setSlotId(id);
-  };
+  const pickSlot = (id: string) => setSlotId(id);
 
   const commitNew = () => slotId && onPlace(slotId, marks);
   const commitEdit = () => slotId && onUpdate(slotId, marks);

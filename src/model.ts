@@ -141,3 +141,10 @@ export function baseFilename(title: string): string {
     .slice(0, 40);
   return `${safe || "shift"}_${stamp}`;
 }
+
+/** File name (without extension) for the editable save data, e.g. イベントセーブデータ_20261115. */
+export function saveDataFilename(label: string): string {
+  const d = new Date();
+  const p = (n: number) => String(n).padStart(2, "0");
+  return `${label}_${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}`;
+}

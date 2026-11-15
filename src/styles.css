@@ -572,9 +572,10 @@ body.is-dragging * {
   cursor: text;
   transition: background var(--dur) var(--ease);
 }
-.page:not(.export) .cell.drop-over {
-  background: #e7edfc;
-  box-shadow: inset 0 0 0 2px #2d5be3;
+.page:not(.export) .cell.drop-over,
+.page:not(.export) .cell:has(.slot-line.drop-over) {
+  background: #dfe7fd;
+  box-shadow: inset 0 0 0 3px #2d5be3;
 }
 .slot-line {
   display: flex;
@@ -1082,7 +1083,10 @@ textarea.field {
     background var(--dur) var(--ease);
 }
 .item.draggable {
-  touch-action: pan-y;
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
   cursor: grab;
 }
 .item.draggable:hover {

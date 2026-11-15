@@ -20,7 +20,7 @@ import {
 import { COPY, fmt } from "../copy";
 import { useDragKind, type DragPayload, type DropTarget, type Point } from "../dnd";
 import { downloadBlob, jsonBlob, parseSavedFile, readFileAsText } from "../io";
-import { baseFilename, isSheetEmpty, todayISO } from "../model";
+import { baseFilename, saveDataFilename, isSheetEmpty, todayISO } from "../model";
 import { canRedo, canUndo, redo, replaceSheet, undo, useSheet } from "../store";
 import { PAGE_W, type Sheet } from "../types";
 import { AssignPopover, type AssignIntent } from "./AssignPopover";
@@ -168,12 +168,13 @@ export function App() {
       const json = jsonBlob(sheet);
       downloadBlob(pdf, `${base}.pdf`);
       await new Promise((r) => setTimeout(r, 800));
-      downloadBlob(json, `${base}.json`);
+      const saveName = `${saveDataFilename(COPY.saveDataName)}.json`;
+      downloadBlob(json, saveName);
       setDialog({
         type: "saved",
         files: [
           { name: `${base}.pdf`, url: URL.createObjectURL(pdf) },
-          { name: `${base}.json`, url: URL.createObjectURL(json) },
+          { name: saveName, url: URL.createObjectURL(json) },
         ],
       });
     } finally {
@@ -181,8 +182,7 @@ export function App() {
     }
   };
   const saveJson = () => {
-    const base = baseFilename(page.title || sheet.pages[0].title);
-    downloadBlob(jsonBlob(sheet), `${base}.json`);
+    downloadBlob(jsonBlob(sheet), `${saveDataFilename(COPY.saveDataName)}.json`);
   };
   const onFileChosen = async (e: Event) => {
     const input = e.currentTarget as HTMLInputElement;

@@ -88,6 +88,14 @@ function findTarget(p: Point, payload: DragPayload): DropTarget | null {
   return null;
 }
 
+function findScrollParent(el: HTMLElement | null): HTMLElement | null {
+  for (let n = el; n && n !== document.body; n = n.parentElement) {
+    const oy = getComputedStyle(n).overflowY;
+    if ((oy === "auto" || oy === "scroll") && n.scrollHeight > n.clientHeight) return n;
+  }
+  return null;
+}
+
 /**
  * Arm a drag on pointerdown. The drag begins once the pointer travels past the
  * threshold; until then nothing happens, so taps still work.
@@ -104,12 +112,19 @@ export function armDrag(e: PointerEvent, opts: DragOptions): void {
   let last: Point = start;
   let raf = 0;
   let autoScrollTimer = 0;
+  let panning = false;
+  let panPrev = e.clientY;
+  const panEl = findScrollParent(e.target as HTMLElement);
+  // iOS Safari: block native scrolling for the whole gesture once armed.
+  const blockTouch = (te: TouchEvent) => te.cancelable && te.preventDefault();
+  document.addEventListener("touchmove", blockTouch, { passive: false, capture: true });
 
   const cleanup = () => {
     window.removeEventListener("pointermove", onMove, true);
     window.removeEventListener("pointerup", onUp, true);
     window.removeEventListener("pointercancel", onCancel, true);
     window.removeEventListener("keydown", onKey, true);
+    document.removeEventListener("touchmove", blockTouch, { capture: true } as EventListenerOptions);
     if (autoScrollTimer) cancelAnimationFrame(autoScrollTimer);
     if (raf) cancelAnimationFrame(raf);
     if (started) {
@@ -199,10 +214,20 @@ export function armDrag(e: PointerEvent, opts: DragOptions): void {
       const dy = last.y - start.y;
       const dist = Math.hypot(dx, dy);
       if (dist < threshold) return;
-      if (opts.axis === "x" && ev.pointerType !== "mouse" && Math.abs(dy) > Math.abs(dx) * 1.2) {
-        // Vertical intent: let the browser scroll instead.
-        cleanup();
-        return;
+      if (panning || (opts.axis === "x" && ev.pointerType !== "mouse" && Math.abs(dy) > Math.abs(dx) * 2.5 && panEl)) {
+        // Clearly vertical intent inside a scrolling list: scroll it by hand
+        // (the item has touch-action: none so the browser never steals the touch).
+        // Once the finger heads sideways out of the list, turn the pan into a drag.
+        panning = true;
+        const pr = panEl!.getBoundingClientRect();
+        if (last.x < pr.left - 4) {
+          panning = false;
+        } else {
+          panEl!.scrollTop -= ev.clientY - panPrev;
+          panPrev = ev.clientY;
+          ev.preventDefault();
+          return;
+        }
       }
       begin();
     }
